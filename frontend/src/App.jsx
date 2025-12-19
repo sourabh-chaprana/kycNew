@@ -5,6 +5,7 @@ import { getCurrentUser } from './Action/auth/auth.thunk';
 import LoginPage from './Components/LoginPage';
 import RegisterPage from './Components/RegisterPage';
 import Dashboard from './Components/Dashboard';
+import PassengerAdd from './Components/Passenger/PassengerAdd';
 import './App.css';
 
 // Protected Route Component
@@ -79,6 +80,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/passengers/new"
+          element={
+            <ProtectedRoute>
+              <PassengerAdd />
             </ProtectedRoute>
           }
         />

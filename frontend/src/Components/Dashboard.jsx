@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../Action/auth/auth.slice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   getPNRs,
   updatePassengerStatus,
   approveAllPending,
 } from '../Action/Passenger/passenger.thunk';
 import { clearError } from '../Action/Passenger/passenger.slice';
+import PassengerList from './Passenger/PassengerList';
 import UserDetailModal from './Modals/UserDetailModal';
 import Toast from './Toast';
 
@@ -153,18 +154,18 @@ const Dashboard = () => {
 
             <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
               <nav className="flex items-center space-x-2 md:space-x-4">
-                <a href="#" className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm">
+                <Link to="/dashboard" className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm">
                   <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                   </svg>
                   <span className="text-xs md:text-sm font-medium hidden sm:inline">Home</span>
-                </a>
-                <a href="#" className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm">
+                </Link>
+                <Link to="/passengers/new" className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm">
                   <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <span className="text-xs md:text-sm font-medium hidden sm:inline">Upload Documents</span>
-                </a>
+                </Link>
               </nav>
 
               <div className="flex items-center space-x-2 md:space-x-3 border-l border-gray-200 pl-3 md:pl-6">
@@ -253,6 +254,19 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Add Passenger Button */}
+        <div className="mb-6 flex justify-end">
+          <Link
+            to="/passengers/new"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transform hover:scale-105"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add Passenger</span>
+          </Link>
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -337,77 +351,19 @@ const Dashboard = () => {
         </div>
 
         {/* Records List */}
-        <div className="space-y-4">
-          {loading ? (
-            <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading records...</p>
-            </div>
-          ) : filteredRecords.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 p-12 text-center">
-              <p className="text-gray-500 text-lg">No {activeTab} records found</p>
-            </div>
-          ) : (
-            filteredRecords.map((record) => (
-              <div
-                key={record.id}
-                onClick={() => handlePnrClick(record)}
-                className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_40px_rgba(59,130,246,0.2)] transition-all duration-300 border border-gray-100 hover:border-blue-200 p-6 cursor-pointer transform hover:-translate-y-1"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-5 flex-1">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-200 flex-shrink-0">
-                      {record.tag}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-xl font-bold text-gray-900">PNR: {record.pnr}</h3>
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm whitespace-nowrap ${
-                            record.status === 'pending'
-                              ? 'bg-orange-100 text-orange-700 border border-orange-200'
-                              : record.status === 'approved'
-                              ? 'bg-green-100 text-green-700 border border-green-200'
-                              : record.status === 'declined'
-                              ? 'bg-red-100 text-red-700 border border-red-200'
-                              : 'bg-purple-100 text-purple-700 border border-purple-200'
-                          }`}
-                        >
-                          {record.status === 'pending'
-                            ? 'Pending Review'
-                            : record.status === 'approved'
-                            ? 'Approved'
-                            : record.status === 'declined'
-                            ? 'Declined'
-                            : 'Partially'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                          <span className="font-medium">{record.passengers} {record.passengers === 1 ? 'Passenger' : 'Passengers'}</span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="font-medium">{formatDate(record.date)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 ml-4">
-                    <svg className="w-6 h-6 text-gray-400 hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        {loading ? (
+          <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading records...</p>
+          </div>
+        ) : (
+          <PassengerList
+            records={filteredRecords}
+            activeTab={activeTab}
+            onSelect={handlePnrClick}
+            formatDate={formatDate}
+          />
+        )}
       </main>
 
       {/* Modal */}
