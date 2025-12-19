@@ -262,26 +262,30 @@ const UserDetailModal = ({ pnr, onClose, onStatusChange, onApproveAll }) => {
 
       {/* Nested File Viewer Modal */}
       {viewingFile && (
-        <div className="fixed inset-0 z-[60] bg-black bg-opacity-90 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full h-full max-w-6xl max-h-[90vh] flex flex-col items-center justify-center">
-             {/* Close Button */}
+        <div className="fixed inset-0 z-[100] bg-black bg-opacity-95 flex items-center justify-center animate-in fade-in duration-200">
+           {/* Toolbar */}
+           <div className="absolute top-0 left-0 w-full px-6 py-4 flex items-center justify-between bg-gradient-to-b from-black/50 to-transparent z-50">
+             <div className="text-white font-medium text-lg drop-shadow-md">
+               {viewingFile.type === 'pdf' ? 'Document Viewer' : 'Image Viewer'}
+             </div>
              <button 
               onClick={closeFileViewer}
-              className="absolute -top-12 right-0 text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-all"
+              className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all backdrop-blur-sm"
             >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+           </div>
 
-            {/* Content */}
-            <div className="w-full h-full bg-transparent flex items-center justify-center rounded-lg overflow-hidden shadow-2xl relative">
-              {viewingFile.type === 'pdf' ? (
-                // Use object tag for PDF to better handle embedding/fallback
+          <div className="w-full h-full p-4 sm:p-8 flex items-center justify-center pt-20 pb-10">
+            {viewingFile.type === 'pdf' ? (
+              // Use object tag for PDF to better handle embedding/fallback
+              <div className="w-full h-full max-w-6xl bg-white rounded-lg shadow-2xl overflow-hidden">
                 <object
                   data={viewingFile.url}
                   type="application/pdf"
-                  className="w-full h-full bg-white rounded-lg"
+                  className="w-full h-full"
                 >
                   {/* Fallback for when object fails to load or X-Frame-Options blocks it */}
                   <div className="w-full h-full flex flex-col items-center justify-center bg-white text-center p-8">
@@ -309,14 +313,14 @@ const UserDetailModal = ({ pnr, onClose, onStatusChange, onApproveAll }) => {
                     </a>
                   </div>
                 </object>
-              ) : (
-                <img 
-                  src={viewingFile.url} 
-                  alt="Document" 
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                />
-              )}
-            </div>
+              </div>
+            ) : (
+              <img 
+                src={viewingFile.url} 
+                alt="Document" 
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              />
+            )}
           </div>
         </div>
       )}

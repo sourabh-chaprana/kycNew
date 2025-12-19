@@ -240,7 +240,7 @@ const PassengerAdd = () => {
                         onChange={(e) =>
                           handleTravelerChange(index, 'name', e.target.value)
                         }
-                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
+                        className="w-full h-[46px] px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
                         placeholder="Enter traveler name"
                         required
                       />
@@ -259,7 +259,7 @@ const PassengerAdd = () => {
                             e.target.value
                           )
                         }
-                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
+                        className="w-full h-[46px] px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
                         placeholder="e.g., PASS-001234"
                         required
                       />
@@ -298,15 +298,26 @@ const PassengerAdd = () => {
                       <div className="relative">
                         {traveler.inputType === 'file' ? (
                           <>
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => handleFileChange(index, e)}
-                              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition bg-white text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            />
+                            <div className="relative w-full h-[46px]">
+                              <input
+                                type="file"
+                                id={`file-upload-${index}`}
+                                accept="image/*,application/pdf"
+                                onChange={(e) => handleFileChange(index, e)}
+                                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                              />
+                              <div className="w-full h-full px-4 border-2 border-gray-200 rounded-xl bg-white flex items-center justify-between text-gray-500">
+                                <span className="truncate pr-2">
+                                  {traveler.image ? 'File selected' : 'No file chosen'}
+                                </span>
+                                <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold whitespace-nowrap">
+                                  Choose File
+                                </span>
+                              </div>
+                            </div>
                             {traveler.image && (
                               <p className="absolute -bottom-5 left-0 text-xs text-green-600 truncate w-full">
-                                File selected
+                                File ready to upload
                               </p>
                             )}
                           </>
@@ -317,7 +328,7 @@ const PassengerAdd = () => {
                             onChange={(e) =>
                               handleTravelerChange(index, 'image', e.target.value)
                             }
-                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
+                            className="w-full h-[46px] px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
                             placeholder="https://..."
                           />
                         )}
