@@ -1,8 +1,13 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../Action/auth/auth.slice';
-import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import {
+  getPNRs,
+  updatePassengerStatus,
+  approveAllPending,
+} from '../Action/Passenger/passenger.thunk';
+import { clearError } from '../Action/Passenger/passenger.slice';
 import UserDetailModal from './Modals/UserDetailModal';
 import Toast from './Toast';
 
@@ -10,54 +15,25 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
+  const { pnrs, stats, loading, error } = useSelector((state) => state.passenger);
   const [activeTab, setActiveTab] = useState('pending');
   const [selectedPnr, setSelectedPnr] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Mock data - replace with API calls later
-  const [records, setRecords] = useState([
-    {
-      id: 1,
-      pnr: 'ABC123',
-      passengers: 2,
-      status: 'pending',
-      date: 'Dec 19, 2025 09:52',
-      tag: 'ABC',
-      passengersData: [
-        {
-          id: 1,
-          name: 'John Doe',
-          documentId: 'PASS-001234',
-          status: 'pending',
-          image: 'https://i.pravatar.cc/150?img=12',
-        },
-        {
-          id: 2,
-          name: 'Jane Doe',
-          documentId: 'PASS-001235',
-          status: 'pending',
-          image: 'https://i.pravatar.cc/150?img=13',
-        },
-      ],
-    },
-    {
-      id: 2,
-      pnr: 'XYZ789',
-      passengers: 1,
-      status: 'pending',
-      date: 'Dec 19, 2025 08:52',
-      tag: 'XYZ',
-      passengersData: [
-        {
-          id: 3,
-          name: 'Test User',
-          documentId: 'PASS-001236',
-          status: 'pending',
-          image: 'https://i.pravatar.cc/150?img=14',
-        },
-      ],
-    },
-  ]);
+  // Fetch PNRs on mount and when activeTab changes
+  useEffect(() => {
+    dispatch(getPNRs(activeTab === 'all' ? null : activeTab));
+  }, [dispatch, activeTab]);
+
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        dispatch(clearError());
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -72,59 +48,90 @@ const Dashboard = () => {
     setSelectedPnr(null);
   };
 
-  const handleStatusChange = (pnrId, passengerId, newStatus, passengerName) => {
-    setRecords((prev) =>
-      prev.map((record) => {
-        if (record.id === pnrId) {
-          const updatedPassengers = record.passengersData.map((p) =>
-            p.id === passengerId ? { ...p, status: newStatus } : p
-          );
-          const allApproved = updatedPassengers.every((p) => p.status === 'approved');
-          const hasDeclined = updatedPassengers.some((p) => p.status === 'declined');
-          
-          let newRecordStatus = record.status;
-          if (allApproved && updatedPassengers.length > 0) {
-            newRecordStatus = 'approved';
-          } else if (hasDeclined) {
-            newRecordStatus = 'declined';
-          }
+  const handleStatusChange = async (pnrId, passengerId, newStatus, passengerName, rejectionReason = '') => {
+    try {
+      const result = await dispatch(updatePassengerStatus({
+        pnrId,
+        passengerId,
+        status: newStatus,
+        rejectionReason
+      }));
 
-          // Show toast notification
-          if (newStatus === 'approved') {
-            setToast({
-              message: `Document for ${passengerName} has been approved.`,
-              type: 'success',
-            });
-          } else if (newStatus === 'declined') {
-            setToast({
-              message: `Document for ${passengerName} has been declined.`,
-              type: 'error',
-            });
-          }
-
-          return {
-            ...record,
-            status: newRecordStatus,
-            passengersData: updatedPassengers,
-          };
+      if (updatePassengerStatus.fulfilled.match(result)) {
+        // Update selected PNR if it's the one being updated
+        if (selectedPnr && selectedPnr.id === pnrId) {
+          setSelectedPnr(result.payload);
         }
-        return record;
-      })
-    );
+
+        // Show toast notification
+        if (newStatus === 'approved') {
+          setToast({
+            message: `Document for ${passengerName} has been approved.`,
+            type: 'success',
+          });
+        } else if (newStatus === 'declined') {
+          setToast({
+            message: `Document for ${passengerName} has been declined.`,
+            type: 'error',
+          });
+        }
+
+        // Refresh PNRs to update stats
+        dispatch(getPNRs(activeTab === 'all' ? null : activeTab));
+      }
+    } catch (err) {
+      setToast({
+        message: err.message || 'Failed to update passenger status',
+        type: 'error',
+      });
+    }
   };
 
-  const filteredRecords = records.filter((record) => {
+  const handleApproveAll = async (pnrId) => {
+    try {
+      const result = await dispatch(approveAllPending(pnrId));
+
+      if (approveAllPending.fulfilled.match(result)) {
+        // Update selected PNR
+        if (selectedPnr && selectedPnr.id === pnrId) {
+          setSelectedPnr(result.payload);
+        }
+
+        setToast({
+          message: 'All pending passengers have been approved.',
+          type: 'success',
+        });
+
+        // Refresh PNRs to update stats
+        dispatch(getPNRs(activeTab === 'all' ? null : activeTab));
+      }
+    } catch (err) {
+      setToast({
+        message: err.message || 'Failed to approve all pending',
+        type: 'error',
+      });
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const filteredRecords = pnrs.filter((record) => {
     if (activeTab === 'pending') return record.status === 'pending';
     if (activeTab === 'approved') return record.status === 'approved';
     if (activeTab === 'declined') return record.status === 'declined';
+    if (activeTab === 'partially') return record.status === 'partially';
     return true;
   });
-
-  const stats = {
-    pending: records.filter((r) => r.status === 'pending').length,
-    approved: records.filter((r) => r.status === 'approved').length,
-    declined: records.filter((r) => r.status === 'declined').length,
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
@@ -188,7 +195,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_40px_rgba(249,115,22,0.2)] transition-all duration-300 p-6 border border-orange-100 hover:border-orange-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -230,14 +237,35 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_40px_rgba(147,51,234,0.2)] transition-all duration-300 p-6 border border-purple-100 hover:border-purple-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Partially Records</p>
+                <p className="text-5xl font-extrabold text-gray-900 leading-none">{stats.partially}</p>
+              </div>
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200 flex-shrink-0 ml-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 mb-6 overflow-hidden">
-          <div className="flex border-b border-gray-200 p-2">
+          <div className="flex border-b border-gray-200 p-2 overflow-x-auto">
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 relative mr-2 rounded-t-lg ${
+              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 relative mr-2 rounded-t-lg whitespace-nowrap ${
                 activeTab === 'pending'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -259,7 +287,7 @@ const Dashboard = () => {
             </button>
             <button
               onClick={() => setActiveTab('approved')}
-              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 mr-2 rounded-t-lg ${
+              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 mr-2 rounded-t-lg whitespace-nowrap ${
                 activeTab === 'approved'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -272,7 +300,7 @@ const Dashboard = () => {
             </button>
             <button
               onClick={() => setActiveTab('declined')}
-              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 rounded-t-lg ${
+              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 mr-2 rounded-t-lg whitespace-nowrap ${
                 activeTab === 'declined'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -283,12 +311,39 @@ const Dashboard = () => {
               </svg>
               <span>Declined</span>
             </button>
+            <button
+              onClick={() => setActiveTab('partially')}
+              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 rounded-t-lg whitespace-nowrap ${
+                activeTab === 'partially'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span>Partially</span>
+              {stats.partially > 0 && (
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                  activeTab === 'partially'
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-purple-100 text-purple-700'
+                }`}>
+                  {stats.partially}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
         {/* Records List */}
         <div className="space-y-4">
-          {filteredRecords.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading records...</p>
+            </div>
+          ) : filteredRecords.length === 0 ? (
             <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 p-12 text-center">
               <p className="text-gray-500 text-lg">No {activeTab} records found</p>
             </div>
@@ -313,14 +368,18 @@ const Dashboard = () => {
                               ? 'bg-orange-100 text-orange-700 border border-orange-200'
                               : record.status === 'approved'
                               ? 'bg-green-100 text-green-700 border border-green-200'
-                              : 'bg-red-100 text-red-700 border border-red-200'
+                              : record.status === 'declined'
+                              ? 'bg-red-100 text-red-700 border border-red-200'
+                              : 'bg-purple-100 text-purple-700 border border-purple-200'
                           }`}
                         >
                           {record.status === 'pending'
                             ? 'Pending Review'
                             : record.status === 'approved'
                             ? 'Approved'
-                            : 'Declined'}
+                            : record.status === 'declined'
+                            ? 'Declined'
+                            : 'Partially'}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 flex-wrap">
@@ -334,7 +393,7 @@ const Dashboard = () => {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="font-medium">{record.date}</span>
+                          <span className="font-medium">{formatDate(record.date)}</span>
                         </div>
                       </div>
                     </div>
@@ -357,6 +416,7 @@ const Dashboard = () => {
           pnr={selectedPnr}
           onClose={handleCloseModal}
           onStatusChange={handleStatusChange}
+          onApproveAll={handleApproveAll}
         />
       )}
 
@@ -373,4 +433,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

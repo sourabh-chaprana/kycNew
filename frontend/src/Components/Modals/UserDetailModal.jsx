@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-const UserDetailModal = ({ pnr, onClose, onStatusChange }) => {
+const UserDetailModal = ({ pnr, onClose, onStatusChange, onApproveAll }) => {
   const [rejectingPassenger, setRejectingPassenger] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
   const handleApprove = (passengerId, passengerName) => {
-    onStatusChange(pnr.id, passengerId, 'approved', passengerName);
+    onStatusChange(pnr.id, passengerId, 'approved', passengerName, '');
   };
 
   const handleReject = (passengerId) => {
@@ -15,7 +15,7 @@ const UserDetailModal = ({ pnr, onClose, onStatusChange }) => {
   const handleConfirmRejection = () => {
     if (rejectionReason.trim()) {
       const passenger = pnr.passengersData.find((p) => p.id === rejectingPassenger);
-      onStatusChange(pnr.id, rejectingPassenger, 'declined', passenger?.name || 'Passenger');
+      onStatusChange(pnr.id, rejectingPassenger, 'declined', passenger?.name || 'Passenger', rejectionReason);
       setRejectingPassenger(null);
       setRejectionReason('');
     }
@@ -26,12 +26,17 @@ const UserDetailModal = ({ pnr, onClose, onStatusChange }) => {
     setRejectionReason('');
   };
 
-  const handleApproveAll = () => {
-    pnr.passengersData.forEach((passenger) => {
-      if (passenger.status === 'pending') {
-        onStatusChange(pnr.id, passenger.id, 'approved', passenger.name);
-      }
-    });
+  const handleApproveAllClick = () => {
+    if (onApproveAll) {
+      onApproveAll(pnr.id);
+    } else {
+      // Fallback: approve individually
+      pnr.passengersData.forEach((passenger) => {
+        if (passenger.status === 'pending') {
+          onStatusChange(pnr.id, passenger.id, 'approved', passenger.name, '');
+        }
+      });
+    }
   };
 
   const pendingCount = pnr.passengersData.filter((p) => p.status === 'pending').length;
@@ -73,12 +78,28 @@ const UserDetailModal = ({ pnr, onClose, onStatusChange }) => {
             >
               <div className="flex items-start space-x-4">
                 {/* Passenger Image */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={passenger.image}
-                    alt={passenger.name}
-                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-                  />
+                <div className="flex-shrink-0 relative">
+                  {passenger.image ? (
+                    <>
+                      <img
+                        src={passenger.image}
+                        alt={passenger.name}
+                        className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const fallback = e.target.parentElement.querySelector('.fallback-avatar');
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl fallback-avatar hidden absolute top-0 left-0">
+                        {passenger.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                      {passenger.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Passenger Info */}
@@ -182,7 +203,7 @@ const UserDetailModal = ({ pnr, onClose, onStatusChange }) => {
           </button>
           {pendingCount > 0 && (
             <button
-              onClick={handleApproveAll}
+              onClick={handleApproveAllClick}
               className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-green-200 hover:shadow-xl hover:shadow-green-300 transform hover:scale-105"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

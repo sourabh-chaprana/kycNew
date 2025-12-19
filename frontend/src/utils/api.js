@@ -72,6 +72,48 @@ export const api = {
       });
     },
   },
+  
+  // Passenger endpoints
+  passenger: {
+    getPNRs: async (status = null) => {
+      const queryParam = status ? `?status=${status}` : '';
+      return apiRequest(`/passengers${queryParam}`, {
+        method: 'GET',
+      });
+    },
+    
+    getPNRById: async (id) => {
+      return apiRequest(`/passengers/${id}`, {
+        method: 'GET',
+      });
+    },
+    
+    createPNR: async (pnrData) => {
+      return apiRequest('/passengers', {
+        method: 'POST',
+        body: JSON.stringify(pnrData),
+      });
+    },
+    
+    updatePassengerStatus: async (pnrId, passengerId, data) => {
+      return apiRequest(`/passengers/${pnrId}/passengers/${passengerId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    
+    approveAllPending: async (pnrId) => {
+      return apiRequest(`/passengers/${pnrId}/passengers/approve-all`, {
+        method: 'PUT',
+      });
+    },
+    
+    deletePNR: async (id) => {
+      return apiRequest(`/passengers/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
 };
 
 export default api;
