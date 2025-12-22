@@ -6,6 +6,7 @@ import LoginPage from './Components/LoginPage';
 import RegisterPage from './Components/RegisterPage';
 import Dashboard from './Components/Dashboard';
 import PassengerAdd from './Components/Passenger/PassengerAdd';
+import Header from './Components/Header';
 import './App.css';
 
 // Protected Route Component
@@ -23,7 +24,14 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  return isAuthenticated ? children : <Navigate to="/" replace />;
+  return isAuthenticated ? (
+    <>
+      <Header />
+      {children}
+    </>
+  ) : (
+    <Navigate to="/" replace />
+  );
 };
 
 // Public Route Component (redirect to dashboard if already logged in)
