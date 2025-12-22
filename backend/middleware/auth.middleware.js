@@ -23,8 +23,11 @@ export const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Get user from token
-      req.user = decoded;
+      // Attach user info from token (userId and role)
+      req.user = {
+        userId: decoded.userId,
+        role: decoded.role
+      };
       
       next();
     } catch (error) {
@@ -42,23 +45,22 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Role-based authorization
+// Role-based authorization (uses role from token, no DB query needed)
 export const authorize = (...roles) => {
-  return async (req, res, next) => {
+  return (req, res, next) => {
     try {
-      const user = await User.findById(req.user.userId);
-      
-      if (!user) {
-        return res.status(404).json({
+      // Role is already in req.user from protect middleware
+      if (!req.user || !req.user.role) {
+        return res.status(401).json({
           success: false,
-          message: 'User not found'
+          message: 'Not authorized to access this route'
         });
       }
 
-      if (!roles.includes(user.role)) {
+      if (!roles.includes(req.user.role)) {
         return res.status(403).json({
           success: false,
-          message: `User role '${user.role}' is not authorized to access this route`
+          message: `User role '${req.user.role}' is not authorized to access this route`
         });
       }
 

@@ -2,9 +2,9 @@ import User from '../Modals/Auth.Modal.js';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 
-// Generate JWT Token
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+// Generate JWT Token with role
+const generateToken = (userId, role) => {
+  return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '30d'
   });
 };
@@ -42,8 +42,8 @@ export const register = async (req, res) => {
       role: role || 'agent'
     });
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate token with role
+    const token = generateToken(user._id, user.role);
 
     res.status(201).json({
       success: true,
@@ -111,8 +111,8 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate token with role
+    const token = generateToken(user._id, user.role);
 
     res.status(200).json({
       success: true,

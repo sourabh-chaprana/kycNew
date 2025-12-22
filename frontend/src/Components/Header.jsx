@@ -29,7 +29,9 @@ const Header = () => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">KYC Verification Dashboard</h1>
-              <p className="text-xs md:text-sm text-gray-500 font-medium mt-0.5">Agent Portal</p>
+              <p className="text-xs md:text-sm text-gray-500 font-medium mt-0.5">
+                {user?.role === 'admin' ? 'Admin Portal' : 'Agent Portal'}
+              </p>
             </div>
           </div>
 
@@ -49,20 +51,23 @@ const Header = () => {
                 </svg>
                 <span className="text-xs md:text-sm font-medium hidden sm:inline">Home</span>
               </Link>
-              <Link
-                to="/passengers/new"
-                className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm"
-              >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                <span className="text-xs md:text-sm font-medium hidden sm:inline">Upload Documents</span>
-              </Link>
+              {/* Upload Documents - Only for agents */}
+              {user?.role === 'agent' && (
+                <Link
+                  to="/passengers/new"
+                  className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm"
+                >
+                  <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  <span className="text-xs md:text-sm font-medium hidden sm:inline">Upload Documents</span>
+                </Link>
+              )}
             </nav>
 
             <div className="flex items-center space-x-2 md:space-x-3 border-l border-gray-200 pl-3 md:pl-6">
@@ -81,7 +86,7 @@ const Header = () => {
                   />
                 </svg>
                 <span className="text-xs md:text-sm font-medium text-gray-700 hidden md:inline">
-                  {user?.name || 'User'}
+                  {user?.name || 'User'} {user?.role && `(${user.role})`}
                 </span>
                 <svg
                   className="w-3 h-3 md:w-4 md:h-4 text-gray-600 hidden md:inline"
