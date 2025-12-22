@@ -114,6 +114,21 @@ export const api = {
       });
     },
   },
+  
+  // Agent endpoints (admin only)
+  agent: {
+    getAllAgents: async () => {
+      return apiRequest('/agents', {
+        method: 'GET',
+      });
+    },
+    
+    getAgentPassengers: async (agentId, queryParam = '') => {
+      return apiRequest(`/agents/${agentId}/passengers${queryParam}`, {
+        method: 'GET',
+      });
+    },
+  },
 };
 
 export default api;

@@ -6,6 +6,8 @@ import LoginPage from './Components/LoginPage';
 import RegisterPage from './Components/RegisterPage';
 import Dashboard from './Components/Dashboard';
 import PassengerAdd from './Components/Passenger/PassengerAdd';
+import AgentsList from './Components/Agent/AgentsList';
+import AgentDetails from './Components/Agent/AgentDetails';
 import Header from './Components/Header';
 import './App.css';
 
@@ -111,6 +113,22 @@ function App() {
           element={
             <ProtectedRoute>
               <PassengerAdd />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/agents"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AgentsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/agents/:agentId"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AgentDetails />
             </ProtectedRoute>
           }
         />

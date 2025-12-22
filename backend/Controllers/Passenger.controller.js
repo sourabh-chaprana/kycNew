@@ -185,10 +185,13 @@ export const updatePassengerStatus = async (req, res) => {
     const { pnrId, passengerId } = req.params;
     const { status, rejectionReason } = req.body;
 
-    const pnr = await PNR.findOne({
-      _id: pnrId,
-      createdBy: req.user.userId
-    });
+    // Build query - admin can update any PNR, agents can only update their own
+    const query = { _id: pnrId };
+    if (req.user.role !== 'admin') {
+      query.createdBy = req.user.userId;
+    }
+
+    const pnr = await PNR.findOne(query);
 
     if (!pnr) {
       return res.status(404).json({
@@ -253,10 +256,13 @@ export const approveAllPending = async (req, res) => {
   try {
     const { pnrId } = req.params;
 
-    const pnr = await PNR.findOne({
-      _id: pnrId,
-      createdBy: req.user.userId
-    });
+    // Build query - admin can update any PNR, agents can only update their own
+    const query = { _id: pnrId };
+    if (req.user.role !== 'admin') {
+      query.createdBy = req.user.userId;
+    }
+
+    const pnr = await PNR.findOne(query);
 
     if (!pnr) {
       return res.status(404).json({

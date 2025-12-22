@@ -1,30 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
 import {
-  getPNRs,
+  fetchAgentPassengers,
+} from '../../Action/Agent/agent.thunk';
+import { clearError, clearSelectedAgent } from '../../Action/Agent/agent.slice';
+import {
   updatePassengerStatus,
   approveAllPending,
-} from '../Action/Passenger/passenger.thunk';
-import { clearError } from '../Action/Passenger/passenger.slice';
-import PassengerList from './Passenger/PassengerList';
-import UserDetailModal from './Modals/UserDetailModal';
-import Toast from './Toast';
+} from '../../Action/Passenger/passenger.thunk';
+import PassengerList from '../Passenger/PassengerList';
+import UserDetailModal from '../Modals/UserDetailModal';
+import Toast from '../Toast';
 
-const Dashboard = () => {
+const AgentDetails = () => {
+  const { agentId } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const { pnrs, stats, loading, error } = useSelector((state) => state.passenger);
-  const [activeTab, setActiveTab] = useState('pending');
+  const { selectedAgent, agentPassengers, stats, loading, error } = useSelector((state) => state.agent);
+  const [activeTab, setActiveTab] = useState('all');
   const [selectedPnr, setSelectedPnr] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Fetch PNRs on mount and when activeTab changes
   useEffect(() => {
-    dispatch(getPNRs(activeTab === 'all' ? null : activeTab));
-  }, [dispatch, activeTab]);
+    dispatch(fetchAgentPassengers({ agentId, status: activeTab === 'all' ? null : activeTab }));
+    
+    return () => {
+      dispatch(clearSelectedAgent());
+    };
+  }, [dispatch, agentId, activeTab]);
 
-  // Clear error after 5 seconds
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
@@ -52,12 +57,10 @@ const Dashboard = () => {
       }));
 
       if (updatePassengerStatus.fulfilled.match(result)) {
-        // Update selected PNR if it's the one being updated
         if (selectedPnr && selectedPnr.id === pnrId) {
           setSelectedPnr(result.payload);
         }
 
-        // Show toast notification
         if (newStatus === 'approved') {
           setToast({
             message: `Document for ${passengerName} has been approved.`,
@@ -70,8 +73,7 @@ const Dashboard = () => {
           });
         }
 
-        // Refresh PNRs to update stats
-        dispatch(getPNRs(activeTab === 'all' ? null : activeTab));
+        dispatch(fetchAgentPassengers({ agentId, status: activeTab === 'all' ? null : activeTab }));
       }
     } catch (err) {
       setToast({
@@ -86,7 +88,6 @@ const Dashboard = () => {
       const result = await dispatch(approveAllPending(pnrId));
 
       if (approveAllPending.fulfilled.match(result)) {
-        // Update selected PNR
         if (selectedPnr && selectedPnr.id === pnrId) {
           setSelectedPnr(result.payload);
         }
@@ -96,8 +97,7 @@ const Dashboard = () => {
           type: 'success',
         });
 
-        // Refresh PNRs to update stats
-        dispatch(getPNRs(activeTab === 'all' ? null : activeTab));
+        dispatch(fetchAgentPassengers({ agentId, status: activeTab === 'all' ? null : activeTab }));
       }
     } catch (err) {
       setToast({
@@ -119,7 +119,7 @@ const Dashboard = () => {
     });
   };
 
-  const filteredRecords = pnrs.filter((record) => {
+  const filteredRecords = agentPassengers.filter((record) => {
     if (activeTab === 'pending') return record.status === 'pending';
     if (activeTab === 'approved') return record.status === 'approved';
     if (activeTab === 'declined') return record.status === 'declined';
@@ -127,10 +127,57 @@ const Dashboard = () => {
     return true;
   });
 
+  if (!selectedAgent && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-xl shadow-lg">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Agent Not Found</h2>
+          <p className="text-gray-600 mb-4">The agent you're looking for doesn't exist.</p>
+          <button
+            onClick={() => navigate('/agents')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Back to Agents
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Main Content */}
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/agents')}
+          className="mb-6 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="font-medium">Back to Agents</span>
+        </button>
+
+        {/* Agent Header */}
+        {selectedAgent && (
+          <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 p-6 mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-200 flex-shrink-0">
+                {selectedAgent.avatar || selectedAgent.name.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">{selectedAgent.name}</h1>
+                <p className="text-gray-600 mb-2">{selectedAgent.email}</p>
+                {!selectedAgent.isActive && (
+                  <span className="inline-block px-3 py-1 text-sm font-semibold bg-red-100 text-red-700 rounded">
+                    Inactive
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_40px_rgba(249,115,22,0.2)] transition-all duration-300 p-6 border border-orange-100 hover:border-orange-200">
@@ -190,36 +237,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Add Passenger Button - Only for agents */}
-        {user?.role === 'agent' && (
-          <div className="mb-6 flex justify-end">
-            <Link
-              to="/passengers/new"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transform hover:scale-105"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Add Passenger</span>
-            </Link>
-          </div>
-        )}
-
-        {/* Admin-only section */}
-        {user?.role === 'admin' && (
-          <div className="mb-6 flex justify-end">
-            <Link
-              to="/agents"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-purple-200 hover:shadow-xl hover:shadow-purple-300 transform hover:scale-105"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>View All Agents</span>
-            </Link>
-          </div>
-        )}
-
         {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -230,6 +247,16 @@ const Dashboard = () => {
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-gray-100 mb-6 overflow-hidden">
           <div className="flex border-b border-gray-200 p-2 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 relative mr-2 rounded-t-lg whitespace-nowrap ${
+                activeTab === 'all'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <span>All</span>
+            </button>
             <button
               onClick={() => setActiveTab('pending')}
               className={`flex items-center gap-2 px-6 py-4 font-bold text-sm transition-all duration-200 relative mr-2 rounded-t-lg whitespace-nowrap ${
@@ -341,4 +368,5 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default AgentDetails;
+
