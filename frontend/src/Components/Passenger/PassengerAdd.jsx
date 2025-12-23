@@ -1,19 +1,19 @@
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { createPNR } from '../../Action/Passenger/passenger.thunk';
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { createPNR } from "../../Action/Passenger/passenger.thunk";
 
 const PassengerAdd = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading } = useSelector((state) => state.passenger);
 
-  const [airline, setAirline] = useState('');
-  const [flightNumber, setFlightNumber] = useState('');
-  const [pnrNumber, setPnrNumber] = useState('');
-  const [tag, setTag] = useState('');
+  const [airline, setAirline] = useState("");
+  const [flightNumber, setFlightNumber] = useState("");
+  const [pnrNumber, setPnrNumber] = useState("");
+  const [tag, setTag] = useState("");
   const [travelers, setTravelers] = useState([
-    { name: '', documentId: '', image: '', inputType: 'file' }, // inputType: 'file' | 'url'
+    { name: "", documentId: "", image: "", inputType: "file" }, // inputType: 'file' | 'url'
   ]);
   const [error, setError] = useState(null);
 
@@ -26,7 +26,7 @@ const PassengerAdd = () => {
   const handleInputTypeChange = (index, type) => {
     setTravelers((prev) =>
       prev.map((t, i) =>
-        i === index ? { ...t, inputType: type, image: '' } : t
+        i === index ? { ...t, inputType: type, image: "" } : t
       )
     );
   };
@@ -35,20 +35,29 @@ const PassengerAdd = () => {
     const file = event.target.files[0];
     if (file) {
       // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      const validTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+        "application/pdf",
+      ];
       if (!validTypes.includes(file.type)) {
-        setError('Invalid file type. Please upload an image (JPEG, PNG) or PDF.');
+        setError(
+          "Invalid file type. Please upload an image (JPEG, PNG) or PDF."
+        );
         return;
       }
       // Validate file size (e.g., 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('File size too large. Please upload a file smaller than 5MB.');
+      if (file.size > 20 * 1024 * 1024) {
+        setError(
+          "File size too large. Please upload a file smaller than 20MB."
+        );
         return;
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        handleTravelerChange(index, 'image', reader.result);
+        handleTravelerChange(index, "image", reader.result);
       };
       reader.readAsDataURL(file);
       setError(null);
@@ -58,7 +67,7 @@ const PassengerAdd = () => {
   const handleAddTraveler = () => {
     setTravelers((prev) => [
       ...prev,
-      { name: '', documentId: '', image: '', inputType: 'file' },
+      { name: "", documentId: "", image: "", inputType: "file" },
     ]);
   };
 
@@ -67,7 +76,7 @@ const PassengerAdd = () => {
   };
 
   const handleCancel = () => {
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
   const handleSubmit = async (e) => {
@@ -75,7 +84,7 @@ const PassengerAdd = () => {
     setError(null);
 
     if (!pnrNumber.trim()) {
-      setError('PNR number is required');
+      setError("PNR number is required");
       return;
     }
 
@@ -84,7 +93,7 @@ const PassengerAdd = () => {
     );
 
     if (validTravelers.length === 0) {
-      setError('At least one traveler with name and document ID is required');
+      setError("At least one traveler with name and document ID is required");
       return;
     }
 
@@ -92,7 +101,7 @@ const PassengerAdd = () => {
       pnr: pnrNumber.trim().toUpperCase(),
       tag:
         tag.trim().toUpperCase() ||
-        airline.trim().split(' ')[0]?.substring(0, 3).toUpperCase() ||
+        airline.trim().split(" ")[0]?.substring(0, 3).toUpperCase() ||
         pnrNumber.trim().substring(0, 3).toUpperCase(),
       passengers: validTravelers.map((t) => ({
         name: t.name.trim(),
@@ -103,11 +112,11 @@ const PassengerAdd = () => {
 
     const result = await dispatch(createPNR(payload));
     if (createPNR.fulfilled.match(result)) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     } else if (result.payload) {
       setError(result.payload);
     } else {
-      setError('Failed to create passenger record');
+      setError("Failed to create passenger record");
     }
   };
 
@@ -238,7 +247,7 @@ const PassengerAdd = () => {
                         type="text"
                         value={traveler.name}
                         onChange={(e) =>
-                          handleTravelerChange(index, 'name', e.target.value)
+                          handleTravelerChange(index, "name", e.target.value)
                         }
                         className="w-full h-[46px] px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
                         placeholder="Enter traveler name"
@@ -255,7 +264,7 @@ const PassengerAdd = () => {
                         onChange={(e) =>
                           handleTravelerChange(
                             index,
-                            'documentId',
+                            "documentId",
                             e.target.value
                           )
                         }
@@ -272,31 +281,31 @@ const PassengerAdd = () => {
                         <div className="flex text-xs bg-gray-100 rounded-lg p-0.5">
                           <button
                             type="button"
-                            onClick={() => handleInputTypeChange(index, 'file')}
+                            onClick={() => handleInputTypeChange(index, "file")}
                             className={`px-2 py-0.5 rounded-md transition-colors ${
-                              traveler.inputType === 'file'
-                                ? 'bg-white shadow text-blue-600 font-medium'
-                                : 'text-gray-500 hover:text-gray-700'
+                              traveler.inputType === "file"
+                                ? "bg-white shadow text-blue-600 font-medium"
+                                : "text-gray-500 hover:text-gray-700"
                             }`}
                           >
                             Upload
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleInputTypeChange(index, 'url')}
+                            onClick={() => handleInputTypeChange(index, "url")}
                             className={`px-2 py-0.5 rounded-md transition-colors ${
-                              traveler.inputType === 'url'
-                                ? 'bg-white shadow text-blue-600 font-medium'
-                                : 'text-gray-500 hover:text-gray-700'
+                              traveler.inputType === "url"
+                                ? "bg-white shadow text-blue-600 font-medium"
+                                : "text-gray-500 hover:text-gray-700"
                             }`}
                           >
                             URL
                           </button>
                         </div>
                       </div>
-                      
+
                       <div className="relative">
-                        {traveler.inputType === 'file' ? (
+                        {traveler.inputType === "file" ? (
                           <>
                             <div className="relative w-full h-[46px]">
                               <input
@@ -308,7 +317,9 @@ const PassengerAdd = () => {
                               />
                               <div className="w-full h-full px-4 border-2 border-gray-200 rounded-xl bg-white flex items-center justify-between text-gray-500">
                                 <span className="truncate pr-2">
-                                  {traveler.image ? 'File selected' : 'No file chosen'}
+                                  {traveler.image
+                                    ? "File selected"
+                                    : "No file chosen"}
                                 </span>
                                 <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold whitespace-nowrap">
                                   Choose File
@@ -326,7 +337,11 @@ const PassengerAdd = () => {
                             type="url"
                             value={traveler.image}
                             onChange={(e) =>
-                              handleTravelerChange(index, 'image', e.target.value)
+                              handleTravelerChange(
+                                index,
+                                "image",
+                                e.target.value
+                              )
                             }
                             className="w-full h-[46px] px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition"
                             placeholder="https://..."
@@ -359,7 +374,9 @@ const PassengerAdd = () => {
               disabled={loading}
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold shadow-lg shadow-blue-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:shadow-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {loading ? 'Creating...' : `Create ${travelers.length} Passenger(s)`}
+              {loading
+                ? "Creating..."
+                : `Create ${travelers.length} Passenger(s)`}
             </button>
           </div>
         </form>
