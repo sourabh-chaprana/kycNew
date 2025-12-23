@@ -38,7 +38,7 @@ const Header = () => {
           <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
             <nav className="flex items-center space-x-2 md:space-x-4">
               <Link
-                to="/dashboard"
+                to={user?.role === 'admin' ? '/agents' : '/dashboard'}
                 className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition text-sm"
               >
                 <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

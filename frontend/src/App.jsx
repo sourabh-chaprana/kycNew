@@ -51,9 +51,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   );
 };
 
-// Public Route Component (redirect to dashboard if already logged in)
+// Public Route Component (redirect based on role if already logged in)
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
   
   if (loading) {
     return (
@@ -66,7 +66,15 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+  if (!isAuthenticated) {
+    return children;
+  }
+
+  if (user?.role === 'admin') {
+    return <Navigate to="/agents" replace />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
 };
 
 function App() {

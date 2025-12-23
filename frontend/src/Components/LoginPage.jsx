@@ -14,7 +14,12 @@ const LoginPage = () => {
     e.preventDefault();
     const result = await dispatch(loginUser({ email, password }));
     if (loginUser.fulfilled.match(result)) {
-      navigate('/dashboard');
+      const role = result.payload?.role;
+      if (role === 'admin') {
+        navigate('/agents');
+      } else {
+        navigate('/dashboard');
+      }
     }
   };
 
